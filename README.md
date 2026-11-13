@@ -22,8 +22,11 @@ It requires the following dependencies:
 * CMake >= 3.21
 * C++17 compiler
 * CUDA Toolkit
+* Python >= 3.9 (only for the power sweep scripts)
 
 The CUDA Toolkit can be downloaded from https://developer.nvidia.com/cuda-downloads
+
+Optional: matplotlib, to plot the power sweep results.
 
 ## Compiling efimon-benchmarks
 
@@ -90,10 +93,85 @@ Stresses the copies between the host and the GPU.
 ./build/bench_transfer --duration 10 --direction d2h --memory pageable
 ```
 
+### Power cycle
+
+Runs a warm-up, a measurement and a cooldown phase in one process. In each
+period, the GPU works for the duty cycle and sleeps for the rest, so the power
+can be set between idle and full load. A small marker kernel starts each
+phase, so the phases can be found in the CUPTI kernel trace.
+
+```bash
+./build/bench_power_cycle --workload compute --duty-cycle 50 \
+  --warmup-seconds 15 --duration 45 --cooldown-seconds 15
+```
+
+It has these options instead of `--warmup`:
+
+| Option | Default Value | Description |
+|---|---|---|
+| --workload | compute | idle, compute, memory or mixed |
+| --duty-cycle | 100 | Active part of each period, from 0 to 100 |
+| --period-ms | 100 | Length of each period |
+| --warmup-seconds | 15 | Warm-up phase |
+| --duration | 45 | Measurement phase |
+| --cooldown-seconds | 15 | Cooldown phase, without GPU work |
+| --iterations | 10000 | FMA iterations of the compute kernel |
+| --size | 268435456 | Bytes per buffer of the memory kernel |
+| --mixed-compute-pct | 50 | Compute share of the mixed workload |
+
+The idle workload requires `--duty-cycle 0`.
+
 ### Output
 
 Each benchmark prints one `KEY=VALUE` per line. It ends with `STATUS=OK` or
 `STATUS=ERROR`.
+
+## Power Sweeps
+
+A power sweep runs `bench_power_cycle` at several duty cycles through the
+`nvidia-process-metrics-launcher` of the profiler, and then summarizes the
+power of each phase. The conditions are in `config/power_sweep.default.json`.
+
+Check the plan without running the GPU:
+
+```bash
+python3 scripts/run_power_sweep.py --config config/power_sweep.default.json \
+  --mode pilot --output-dir results/pilot --plan-only
+```
+
+Run the pilot:
+
+```bash
+python3 scripts/run_power_sweep.py --config config/power_sweep.default.json \
+  --mode pilot --launcher "$(command -v nvidia-process-metrics-launcher)" \
+  --benchmark build/bench_power_cycle --output-dir results/pilot
+```
+
+Add `--socket PATH` and `--library PATH` if the profiler is not installed in
+the default paths. Add `--resume` to continue an interrupted sweep.
+
+Analyze the results:
+
+```bash
+python3 scripts/analyze_power_sweep.py --study-dir results/pilot \
+  --target-step-w 20 --plot --strict
+```
+
+Run the production sweep with the power levels chosen by the pilot:
+
+```bash
+python3 scripts/run_power_sweep.py --config config/power_sweep.default.json \
+  --mode production \
+  --levels-file results/pilot/summary/recommended_power_levels.csv \
+  --launcher "$(command -v nvidia-process-metrics-launcher)" \
+  --benchmark build/bench_power_cycle --output-dir results/production
+```
+
+Run the tests of the scripts:
+
+```bash
+python3 -m unittest discover -s tests
+```
 
 ## Platforms
 
