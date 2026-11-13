@@ -17,7 +17,7 @@ class SteadyTimer {
  public:
   SteadyTimer() : start_(std::chrono::steady_clock::now()) {}
 
-  double elapsed_seconds() const {
+  double ElapsedSeconds() const {
     return std::chrono::duration<double>(std::chrono::steady_clock::now() -
                                          start_)
         .count();

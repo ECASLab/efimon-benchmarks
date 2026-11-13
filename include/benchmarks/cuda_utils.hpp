@@ -21,13 +21,13 @@ class CudaError : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
-void check_cuda(cudaError_t result, const char* expression, const char* file,
-                int line);
-cudaDeviceProp initialize_cuda_device(int device);
+void CheckCuda(cudaError_t result, const char* expression, const char* file,
+               int line);
+cudaDeviceProp InitializeCudaDevice(int device);
 
 }  // namespace benchmarks
 
-#define CUDA_CHECK(expression) \
-  ::benchmarks::check_cuda((expression), #expression, __FILE__, __LINE__)
+#define BENCHMARKS_CUDA_CHECK(expression) \
+  ::benchmarks::CheckCuda((expression), #expression, __FILE__, __LINE__)
 
 #endif  // INCLUDE_BENCHMARKS_CUDA_UTILS_HPP_

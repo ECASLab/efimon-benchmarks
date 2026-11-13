@@ -23,8 +23,8 @@
 namespace benchmarks {
 namespace {
 
-std::uint64_t parse_unsigned(const std::string& option,
-                             const std::string& text) {
+std::uint64_t ParseUnsigned(const std::string& option,
+                            const std::string& text) {
   std::uint64_t value = 0;
   const auto* begin = text.data();
   const auto* end = begin + text.size();
@@ -74,27 +74,27 @@ ArgumentParser::ArgumentParser(int argc, char** argv) {
   }
 }
 
-bool ArgumentParser::help_requested() const { return help_requested_; }
+bool ArgumentParser::HelpRequested() const { return help_requested_; }
 
-bool ArgumentParser::has(const std::string& option) const {
+bool ArgumentParser::Has(const std::string& option) const {
   return options_.find(option) != options_.end();
 }
 
-std::string ArgumentParser::string_value(
+std::string ArgumentParser::StringValue(
     const std::string& option, const std::string& default_value) const {
   const auto found = options_.find(option);
   return found == options_.end() ? default_value : found->second;
 }
 
-std::uint64_t ArgumentParser::unsigned_value(
-    const std::string& option, std::uint64_t default_value) const {
+std::uint64_t ArgumentParser::UnsignedValue(const std::string& option,
+                                            std::uint64_t default_value) const {
   const auto found = options_.find(option);
   return found == options_.end() ? default_value
-                                 : parse_unsigned(option, found->second);
+                                 : ParseUnsigned(option, found->second);
 }
 
-int ArgumentParser::integer_value(const std::string& option,
-                                  int default_value) const {
+int ArgumentParser::IntegerValue(const std::string& option,
+                                 int default_value) const {
   const auto found = options_.find(option);
   if (found == options_.end()) {
     return default_value;
@@ -110,8 +110,8 @@ int ArgumentParser::integer_value(const std::string& option,
   return value;
 }
 
-double ArgumentParser::double_value(const std::string& option,
-                                    double default_value) const {
+double ArgumentParser::DoubleValue(const std::string& option,
+                                   double default_value) const {
   const auto found = options_.find(option);
   if (found == options_.end()) {
     return default_value;
@@ -131,7 +131,7 @@ double ArgumentParser::double_value(const std::string& option,
   return value;
 }
 
-void ArgumentParser::validate_options(
+void ArgumentParser::ValidateOptions(
     std::initializer_list<const char*> allowed) const {
   std::unordered_set<std::string> allowed_set;
   for (const char* option : allowed) {
@@ -145,15 +145,14 @@ void ArgumentParser::validate_options(
   }
 }
 
-CommonConfig parse_common_config(const ArgumentParser& arguments) {
+CommonConfig ParseCommonConfig(const ArgumentParser& arguments) {
   CommonConfig config;
-  config.device = arguments.integer_value("--device", kDefaultDevice);
+  config.device = arguments.IntegerValue("--device", kDefaultDevice);
   config.duration_seconds =
-      arguments.double_value("--duration", kDefaultDurationSeconds);
+      arguments.DoubleValue("--duration", kDefaultDurationSeconds);
   const auto warmup =
-      arguments.unsigned_value("--warmup", kDefaultWarmupIterations);
-  config.block_size =
-      arguments.integer_value("--block-size", kDefaultBlockSize);
+      arguments.UnsignedValue("--warmup", kDefaultWarmupIterations);
+  config.block_size = arguments.IntegerValue("--block-size", kDefaultBlockSize);
 
   if (config.device < 0) {
     throw std::invalid_argument("--device must be non-negative");
@@ -171,7 +170,7 @@ CommonConfig parse_common_config(const ArgumentParser& arguments) {
   return config;
 }
 
-void print_common_config(const CommonConfig& config) {
+void PrintCommonConfig(const CommonConfig& config) {
   std::cout << "DEVICE=" << config.device << '\n'
             << "DURATION_SECONDS=" << std::setprecision(12)
             << config.duration_seconds << '\n'
@@ -179,16 +178,15 @@ void print_common_config(const CommonConfig& config) {
             << "WARMUP=" << config.warmup_iterations << '\n';
 }
 
-void print_execution_summary(double elapsed_seconds,
-                             std::uint64_t operation_count) {
+void PrintExecutionSummary(double elapsed_seconds,
+                           std::uint64_t operation_count) {
   std::cout << "STATUS=OK\n"
             << "EXECUTION_TIME_SECONDS=" << std::fixed << std::setprecision(6)
             << elapsed_seconds << '\n'
             << "OPERATIONS_OR_KERNEL_LAUNCHES=" << operation_count << '\n';
 }
 
-double elapsed_seconds_since(
-    const std::chrono::steady_clock::time_point& start) {
+double ElapsedSecondsSince(const std::chrono::steady_clock::time_point& start) {
   return std::chrono::duration<double>(std::chrono::steady_clock::now() - start)
       .count();
 }

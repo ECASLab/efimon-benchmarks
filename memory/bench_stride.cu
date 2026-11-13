@@ -21,9 +21,9 @@
 
 namespace {
 
-__global__ void strided_read_kernel(float* destination, const float* source,
-                                    std::size_t logical_elements,
-                                    std::size_t stride) {
+__global__ void StridedReadKernel(float* destination, const float* source,
+                                  std::size_t logical_elements,
+                                  std::size_t stride) {
   const std::size_t first_logical =
       static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
   const std::size_t step = static_cast<std::size_t>(blockDim.x) * gridDim.x;
@@ -34,7 +34,7 @@ __global__ void strided_read_kernel(float* destination, const float* source,
   }
 }
 
-void print_help(const char* program) {
+void PrintHelp(const char* program) {
   std::cout
       << "Usage: " << program << " [options]\n\n"
       << "Controlled strided-read CUDA memory microbenchmark.\n\n"
@@ -56,16 +56,16 @@ int main(int argc, char** argv) {
   float* destination = nullptr;
   try {
     const benchmarks::ArgumentParser arguments(argc, argv);
-    if (arguments.help_requested()) {
-      print_help(argv[0]);
+    if (arguments.HelpRequested()) {
+      PrintHelp(argv[0]);
       return 0;
     }
-    arguments.validate_options({"--device", "--duration", "--warmup",
-                                "--block-size", "--size", "--stride"});
-    const auto config = benchmarks::parse_common_config(arguments);
+    arguments.ValidateOptions({"--device", "--duration", "--warmup",
+                               "--block-size", "--size", "--stride"});
+    const auto config = benchmarks::ParseCommonConfig(arguments);
     const auto size_value =
-        arguments.unsigned_value("--size", benchmarks::kDefaultBufferBytes);
-    const auto stride_value = arguments.unsigned_value("--stride", 1);
+        arguments.UnsignedValue("--size", benchmarks::kDefaultBufferBytes);
+    const auto stride_value = arguments.UnsignedValue("--stride", 1);
     if (size_value == 0 ||
         size_value > std::numeric_limits<std::size_t>::max()) {
       throw std::invalid_argument("--size is out of range for this platform");
@@ -82,10 +82,10 @@ int main(int argc, char** argv) {
     const std::size_t elements = bytes / sizeof(float);
 
     std::cout << "BENCHMARK=stride\nVARIANT=strided_read\n";
-    benchmarks::print_common_config(config);
+    benchmarks::PrintCommonConfig(config);
     std::cout << "BYTES=" << bytes << "\nSTRIDE=" << stride << '\n';
 
-    const auto properties = benchmarks::initialize_cuda_device(config.device);
+    const auto properties = benchmarks::InitializeCudaDevice(config.device);
     if (config.block_size > properties.maxThreadsPerBlock) {
       throw std::invalid_argument("--block-size exceeds the device limit");
     }
@@ -97,38 +97,38 @@ int main(int argc, char** argv) {
         required_blocks,
         static_cast<std::size_t>(properties.multiProcessorCount) * 32));
 
-    CUDA_CHECK(cudaMalloc(&source, bytes));
-    CUDA_CHECK(cudaMalloc(&destination, bytes));
-    CUDA_CHECK(cudaMemset(source, 0x3f, bytes));
-    CUDA_CHECK(cudaMemset(destination, 0, bytes));
+    BENCHMARKS_CUDA_CHECK(cudaMalloc(&source, bytes));
+    BENCHMARKS_CUDA_CHECK(cudaMalloc(&destination, bytes));
+    BENCHMARKS_CUDA_CHECK(cudaMemset(source, 0x3f, bytes));
+    BENCHMARKS_CUDA_CHECK(cudaMemset(destination, 0, bytes));
 
     for (std::size_t launch = 0; launch < config.warmup_iterations; ++launch) {
-      strided_read_kernel<<<grid_size, config.block_size>>>(
+      StridedReadKernel<<<grid_size, config.block_size>>>(
           destination, source, logical_elements, stride);
-      CUDA_CHECK(cudaGetLastError());
+      BENCHMARKS_CUDA_CHECK(cudaGetLastError());
     }
-    CUDA_CHECK(cudaDeviceSynchronize());
+    BENCHMARKS_CUDA_CHECK(cudaDeviceSynchronize());
 
     std::uint64_t launches = 0;
     const benchmarks::SteadyTimer timer;
     do {
       for (std::size_t batch = 0;
            batch < benchmarks::kLaunchesBetweenSynchronizations; ++batch) {
-        strided_read_kernel<<<grid_size, config.block_size>>>(
+        StridedReadKernel<<<grid_size, config.block_size>>>(
             destination, source, logical_elements, stride);
-        CUDA_CHECK(cudaGetLastError());
+        BENCHMARKS_CUDA_CHECK(cudaGetLastError());
         ++launches;
       }
-      CUDA_CHECK(cudaDeviceSynchronize());
-    } while (timer.elapsed_seconds() < config.duration_seconds);
-    CUDA_CHECK(cudaDeviceSynchronize());
-    const double elapsed = timer.elapsed_seconds();
+      BENCHMARKS_CUDA_CHECK(cudaDeviceSynchronize());
+    } while (timer.ElapsedSeconds() < config.duration_seconds);
+    BENCHMARKS_CUDA_CHECK(cudaDeviceSynchronize());
+    const double elapsed = timer.ElapsedSeconds();
 
-    CUDA_CHECK(cudaFree(destination));
+    BENCHMARKS_CUDA_CHECK(cudaFree(destination));
     destination = nullptr;
-    CUDA_CHECK(cudaFree(source));
+    BENCHMARKS_CUDA_CHECK(cudaFree(source));
     source = nullptr;
-    benchmarks::print_execution_summary(elapsed, launches);
+    benchmarks::PrintExecutionSummary(elapsed, launches);
     return 0;
   } catch (const std::exception& error) {
     if (destination != nullptr) cudaFree(destination);

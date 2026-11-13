@@ -23,27 +23,26 @@ class ArgumentParser {
  public:
   ArgumentParser(int argc, char** argv);
 
-  bool help_requested() const;
-  bool has(const std::string& option) const;
-  std::string string_value(const std::string& option,
-                           const std::string& default_value) const;
-  std::uint64_t unsigned_value(const std::string& option,
-                               std::uint64_t default_value) const;
-  int integer_value(const std::string& option, int default_value) const;
-  double double_value(const std::string& option, double default_value) const;
-  void validate_options(std::initializer_list<const char*> allowed) const;
+  bool HelpRequested() const;
+  bool Has(const std::string& option) const;
+  std::string StringValue(const std::string& option,
+                          const std::string& default_value) const;
+  std::uint64_t UnsignedValue(const std::string& option,
+                              std::uint64_t default_value) const;
+  int IntegerValue(const std::string& option, int default_value) const;
+  double DoubleValue(const std::string& option, double default_value) const;
+  void ValidateOptions(std::initializer_list<const char*> allowed) const;
 
  private:
   std::unordered_map<std::string, std::string> options_;
   bool help_requested_ = false;
 };
 
-CommonConfig parse_common_config(const ArgumentParser& arguments);
-void print_common_config(const CommonConfig& config);
-void print_execution_summary(double elapsed_seconds,
-                             std::uint64_t operation_count);
-double elapsed_seconds_since(
-    const std::chrono::steady_clock::time_point& start);
+CommonConfig ParseCommonConfig(const ArgumentParser& arguments);
+void PrintCommonConfig(const CommonConfig& config);
+void PrintExecutionSummary(double elapsed_seconds,
+                           std::uint64_t operation_count);
+double ElapsedSecondsSince(const std::chrono::steady_clock::time_point& start);
 
 }  // namespace benchmarks
 

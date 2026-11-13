@@ -22,8 +22,8 @@
 
 namespace {
 
-__global__ void streaming_copy_kernel(float* destination, const float* source,
-                                      std::size_t elements) {
+__global__ void StreamingCopyKernel(float* destination, const float* source,
+                                    std::size_t elements) {
   const std::size_t first =
       static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
   const std::size_t step = static_cast<std::size_t>(blockDim.x) * gridDim.x;
@@ -32,7 +32,7 @@ __global__ void streaming_copy_kernel(float* destination, const float* source,
   }
 }
 
-void print_help(const char* program) {
+void PrintHelp(const char* program) {
   std::cout
       << "Usage: " << program << " [options]\n\n"
       << "Global-memory streaming-copy CUDA microbenchmark.\n\n"
@@ -53,15 +53,15 @@ int main(int argc, char** argv) {
   float* destination = nullptr;
   try {
     const benchmarks::ArgumentParser arguments(argc, argv);
-    if (arguments.help_requested()) {
-      print_help(argv[0]);
+    if (arguments.HelpRequested()) {
+      PrintHelp(argv[0]);
       return 0;
     }
-    arguments.validate_options({"--device", "--duration", "--warmup",
-                                "--block-size", "--size", "--mode"});
-    const auto config = benchmarks::parse_common_config(arguments);
+    arguments.ValidateOptions({"--device", "--duration", "--warmup",
+                               "--block-size", "--size", "--mode"});
+    const auto config = benchmarks::ParseCommonConfig(arguments);
     const auto size_value =
-        arguments.unsigned_value("--size", benchmarks::kDefaultBufferBytes);
+        arguments.UnsignedValue("--size", benchmarks::kDefaultBufferBytes);
     if (size_value == 0 ||
         size_value > std::numeric_limits<std::size_t>::max()) {
       throw std::invalid_argument("--size is out of range for this platform");
@@ -70,16 +70,16 @@ int main(int argc, char** argv) {
     if (bytes % sizeof(float) != 0) {
       throw std::invalid_argument("--size must be a multiple of 4 bytes");
     }
-    const std::string mode = arguments.string_value("--mode", "copy");
+    const std::string mode = arguments.StringValue("--mode", "copy");
     if (mode != "copy") {
       throw std::invalid_argument("--mode currently supports only 'copy'");
     }
 
     std::cout << "BENCHMARK=memory\nVARIANT=streaming_copy\n";
-    benchmarks::print_common_config(config);
+    benchmarks::PrintCommonConfig(config);
     std::cout << "BYTES=" << bytes << "\nMODE=" << mode << '\n';
 
-    const auto properties = benchmarks::initialize_cuda_device(config.device);
+    const auto properties = benchmarks::InitializeCudaDevice(config.device);
     if (config.block_size > properties.maxThreadsPerBlock) {
       throw std::invalid_argument("--block-size exceeds the device limit");
     }
@@ -91,38 +91,38 @@ int main(int argc, char** argv) {
         required_blocks,
         static_cast<std::size_t>(properties.multiProcessorCount) * 32));
 
-    CUDA_CHECK(cudaMalloc(&source, bytes));
-    CUDA_CHECK(cudaMalloc(&destination, bytes));
-    CUDA_CHECK(cudaMemset(source, 0x3f, bytes));
-    CUDA_CHECK(cudaMemset(destination, 0, bytes));
+    BENCHMARKS_CUDA_CHECK(cudaMalloc(&source, bytes));
+    BENCHMARKS_CUDA_CHECK(cudaMalloc(&destination, bytes));
+    BENCHMARKS_CUDA_CHECK(cudaMemset(source, 0x3f, bytes));
+    BENCHMARKS_CUDA_CHECK(cudaMemset(destination, 0, bytes));
 
     for (std::size_t launch = 0; launch < config.warmup_iterations; ++launch) {
-      streaming_copy_kernel<<<grid_size, config.block_size>>>(destination,
-                                                              source, elements);
-      CUDA_CHECK(cudaGetLastError());
+      StreamingCopyKernel<<<grid_size, config.block_size>>>(destination, source,
+                                                            elements);
+      BENCHMARKS_CUDA_CHECK(cudaGetLastError());
     }
-    CUDA_CHECK(cudaDeviceSynchronize());
+    BENCHMARKS_CUDA_CHECK(cudaDeviceSynchronize());
 
     std::uint64_t launches = 0;
     const benchmarks::SteadyTimer timer;
     do {
       for (std::size_t batch = 0;
            batch < benchmarks::kLaunchesBetweenSynchronizations; ++batch) {
-        streaming_copy_kernel<<<grid_size, config.block_size>>>(
-            destination, source, elements);
-        CUDA_CHECK(cudaGetLastError());
+        StreamingCopyKernel<<<grid_size, config.block_size>>>(destination,
+                                                              source, elements);
+        BENCHMARKS_CUDA_CHECK(cudaGetLastError());
         ++launches;
       }
-      CUDA_CHECK(cudaDeviceSynchronize());
-    } while (timer.elapsed_seconds() < config.duration_seconds);
-    CUDA_CHECK(cudaDeviceSynchronize());
-    const double elapsed = timer.elapsed_seconds();
+      BENCHMARKS_CUDA_CHECK(cudaDeviceSynchronize());
+    } while (timer.ElapsedSeconds() < config.duration_seconds);
+    BENCHMARKS_CUDA_CHECK(cudaDeviceSynchronize());
+    const double elapsed = timer.ElapsedSeconds();
 
-    CUDA_CHECK(cudaFree(destination));
+    BENCHMARKS_CUDA_CHECK(cudaFree(destination));
     destination = nullptr;
-    CUDA_CHECK(cudaFree(source));
+    BENCHMARKS_CUDA_CHECK(cudaFree(source));
     source = nullptr;
-    benchmarks::print_execution_summary(elapsed, launches);
+    benchmarks::PrintExecutionSummary(elapsed, launches);
     return 0;
   } catch (const std::exception& error) {
     if (destination != nullptr) cudaFree(destination);

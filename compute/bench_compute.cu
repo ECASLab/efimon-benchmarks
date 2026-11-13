@@ -20,7 +20,7 @@
 
 namespace {
 
-__global__ void fma_fp32_kernel(float* output, unsigned int iterations) {
+__global__ void FmaFp32Kernel(float* output, unsigned int iterations) {
   const std::size_t index =
       static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
   const float seed = 1.0F + static_cast<float>(index & 0xffU) * 0.0001F;
@@ -46,7 +46,7 @@ __global__ void fma_fp32_kernel(float* output, unsigned int iterations) {
   output[index] = a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
 }
 
-void print_help(const char* program) {
+void PrintHelp(const char* program) {
   std::cout << "Usage: " << program << " [options]\n\n"
             << "FP32 FMA compute-bound CUDA microbenchmark.\n\n"
             << "Options:\n"
@@ -64,15 +64,15 @@ int main(int argc, char** argv) {
   float* output = nullptr;
   try {
     const benchmarks::ArgumentParser arguments(argc, argv);
-    if (arguments.help_requested()) {
-      print_help(argv[0]);
+    if (arguments.HelpRequested()) {
+      PrintHelp(argv[0]);
       return 0;
     }
-    arguments.validate_options(
+    arguments.ValidateOptions(
         {"--device", "--duration", "--warmup", "--block-size", "--iterations"});
-    const auto config = benchmarks::parse_common_config(arguments);
+    const auto config = benchmarks::ParseCommonConfig(arguments);
     const auto iterations_value =
-        arguments.unsigned_value("--iterations", 10000);
+        arguments.UnsignedValue("--iterations", 10000);
     if (iterations_value == 0 ||
         iterations_value > std::numeric_limits<unsigned int>::max()) {
       throw std::invalid_argument(
@@ -81,41 +81,41 @@ int main(int argc, char** argv) {
     const auto iterations = static_cast<unsigned int>(iterations_value);
 
     std::cout << "BENCHMARK=compute\nVARIANT=fma_fp32\n";
-    benchmarks::print_common_config(config);
+    benchmarks::PrintCommonConfig(config);
     std::cout << "ITERATIONS=" << iterations << '\n';
 
-    const auto properties = benchmarks::initialize_cuda_device(config.device);
+    const auto properties = benchmarks::InitializeCudaDevice(config.device);
     if (config.block_size > properties.maxThreadsPerBlock) {
       throw std::invalid_argument("--block-size exceeds the device limit");
     }
     const int grid_size = properties.multiProcessorCount * 8;
     const std::size_t output_elements =
         static_cast<std::size_t>(grid_size) * config.block_size;
-    CUDA_CHECK(cudaMalloc(&output, output_elements * sizeof(float)));
+    BENCHMARKS_CUDA_CHECK(cudaMalloc(&output, output_elements * sizeof(float)));
 
     for (std::size_t launch = 0; launch < config.warmup_iterations; ++launch) {
-      fma_fp32_kernel<<<grid_size, config.block_size>>>(output, iterations);
-      CUDA_CHECK(cudaGetLastError());
+      FmaFp32Kernel<<<grid_size, config.block_size>>>(output, iterations);
+      BENCHMARKS_CUDA_CHECK(cudaGetLastError());
     }
-    CUDA_CHECK(cudaDeviceSynchronize());
+    BENCHMARKS_CUDA_CHECK(cudaDeviceSynchronize());
 
     std::uint64_t launches = 0;
     const benchmarks::SteadyTimer timer;
     do {
       for (std::size_t batch = 0;
            batch < benchmarks::kLaunchesBetweenSynchronizations; ++batch) {
-        fma_fp32_kernel<<<grid_size, config.block_size>>>(output, iterations);
-        CUDA_CHECK(cudaGetLastError());
+        FmaFp32Kernel<<<grid_size, config.block_size>>>(output, iterations);
+        BENCHMARKS_CUDA_CHECK(cudaGetLastError());
         ++launches;
       }
-      CUDA_CHECK(cudaDeviceSynchronize());
-    } while (timer.elapsed_seconds() < config.duration_seconds);
-    CUDA_CHECK(cudaDeviceSynchronize());
-    const double elapsed = timer.elapsed_seconds();
+      BENCHMARKS_CUDA_CHECK(cudaDeviceSynchronize());
+    } while (timer.ElapsedSeconds() < config.duration_seconds);
+    BENCHMARKS_CUDA_CHECK(cudaDeviceSynchronize());
+    const double elapsed = timer.ElapsedSeconds();
 
-    CUDA_CHECK(cudaFree(output));
+    BENCHMARKS_CUDA_CHECK(cudaFree(output));
     output = nullptr;
-    benchmarks::print_execution_summary(elapsed, launches);
+    benchmarks::PrintExecutionSummary(elapsed, launches);
     return 0;
   } catch (const std::exception& error) {
     if (output != nullptr) {
