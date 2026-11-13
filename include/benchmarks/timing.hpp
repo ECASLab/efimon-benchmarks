@@ -13,12 +13,18 @@
 
 namespace benchmarks {
 
+/**
+ * @brief Measures elapsed time with the steady clock from its construction
+ */
 class SteadyTimer {
  public:
   SteadyTimer() : start_(std::chrono::steady_clock::now()) {}
   SteadyTimer(const SteadyTimer&) = default;
   SteadyTimer& operator=(const SteadyTimer&) = default;
 
+  /**
+   * @brief Returns the seconds elapsed since the timer was created
+   */
   double ElapsedSeconds() const {
     return std::chrono::duration<double>(std::chrono::steady_clock::now() -
                                          start_)
@@ -26,6 +32,7 @@ class SteadyTimer {
   }
 
  private:
+  /** Time point at construction */
   std::chrono::steady_clock::time_point start_;
 };
 

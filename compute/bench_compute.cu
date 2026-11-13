@@ -8,19 +8,27 @@
 
 #include <cuda_runtime.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
-#include <limits>
-#include <stdexcept>
 
 #include "benchmarks/benchmark_config.hpp"
 #include "benchmarks/benchmark_utils.hpp"
 #include "benchmarks/cuda_utils.hpp"
+#include "benchmarks/status.hpp"
 #include "benchmarks/timing.hpp"
 
 namespace {
 
-__global__ void FmaFp32Kernel(float* output, unsigned int iterations) {
+/**
+ * @brief Runs eight independent FP32 FMA chains per thread in registers
+ *
+ * Each thread writes one value so that the compiler keeps the loop.
+ *
+ * @param output One float per thread
+ * @param iterations FMA steps per chain
+ */
+__global__ void FmaFp32Kernel(float* output, int iterations) {
   const std::size_t index =
       static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
   const float seed = 1.0F + static_cast<float>(index & 0xffU) * 0.0001F;
@@ -33,7 +41,7 @@ __global__ void FmaFp32Kernel(float* output, unsigned int iterations) {
   float a6 = seed + 0.06F;
   float a7 = seed + 0.07F;
 
-  for (unsigned int iteration = 0; iteration < iterations; ++iteration) {
+  for (int iteration = 0; iteration < iterations; ++iteration) {
     a0 = fmaf(a0, 1.0000001F, 0.0000001F);
     a1 = fmaf(a1, 0.9999999F, 0.0000002F);
     a2 = fmaf(a2, 1.0000002F, -0.0000001F);
@@ -46,6 +54,11 @@ __global__ void FmaFp32Kernel(float* output, unsigned int iterations) {
   output[index] = a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
 }
 
+/**
+ * @brief Prints the usage and the options of the benchmark
+ *
+ * @param program Name of the executable, from argv[0]
+ */
 void PrintHelp(const char* program) {
   std::cout << "Usage: " << program << " [options]\n\n"
             << "FP32 FMA compute-bound CUDA microbenchmark.\n\n"
@@ -58,70 +71,79 @@ void PrintHelp(const char* program) {
             << "  --help                  Show this help\n";
 }
 
+/**
+ * @brief Parses the options, launches the FMA kernel for the measured
+ * phase and prints the results
+ *
+ * @param argc Number of arguments, as received by main()
+ * @param argv Arguments, as received by main()
+ * @return Error if an option is invalid or a CUDA call fails
+ */
+benchmarks::Status Run(int argc, char** argv) {
+  benchmarks::ArgumentParser arguments;
+  BENCHMARKS_RETURN_IF_ERROR(arguments.Parse(argc, argv));
+  if (arguments.HelpRequested()) {
+    PrintHelp(argv[0]);
+    return benchmarks::Status();
+  }
+  BENCHMARKS_RETURN_IF_ERROR(arguments.ValidateOptions(
+      {"--device", "--duration", "--warmup", "--block-size", "--iterations"}));
+  benchmarks::CommonConfig config;
+  BENCHMARKS_RETURN_IF_ERROR(benchmarks::ParseCommonConfig(arguments, &config));
+  int iterations = 0;
+  BENCHMARKS_RETURN_IF_ERROR(
+      arguments.IntegerValue("--iterations", 10000, &iterations));
+  if (iterations <= 0) {
+    return benchmarks::Status::Error(
+        "--iterations must be in the range [1, 2^31-1]");
+  }
+
+  std::cout << "BENCHMARK=compute\nVARIANT=fma_fp32\n";
+  benchmarks::PrintCommonConfig(config);
+  std::cout << "ITERATIONS=" << iterations << '\n';
+
+  cudaDeviceProp properties;
+  BENCHMARKS_RETURN_IF_ERROR(
+      benchmarks::InitializeCudaDevice(config.device, &properties));
+  if (config.block_size > properties.maxThreadsPerBlock) {
+    return benchmarks::Status::Error("--block-size exceeds the device limit");
+  }
+  const int grid_size = properties.multiProcessorCount * 8;
+  const std::size_t output_elements =
+      static_cast<std::size_t>(grid_size) * config.block_size;
+  float* output_memory = nullptr;
+  BENCHMARKS_CUDA_CHECK(
+      cudaMalloc(&output_memory, output_elements * sizeof(float)));
+  benchmarks::DeviceBuffer<float> output(output_memory);
+
+  for (std::int64_t launch = 0; launch < config.warmup_iterations; ++launch) {
+    FmaFp32Kernel<<<grid_size, config.block_size>>>(output.get(), iterations);
+    BENCHMARKS_CUDA_CHECK(cudaGetLastError());
+  }
+  BENCHMARKS_CUDA_CHECK(cudaDeviceSynchronize());
+
+  std::int64_t launches = 0;
+  const benchmarks::SteadyTimer timer;
+  do {
+    for (int batch = 0; batch < benchmarks::kLaunchesBetweenSynchronizations;
+         ++batch) {
+      FmaFp32Kernel<<<grid_size, config.block_size>>>(output.get(), iterations);
+      BENCHMARKS_CUDA_CHECK(cudaGetLastError());
+      ++launches;
+    }
+    BENCHMARKS_CUDA_CHECK(cudaDeviceSynchronize());
+  } while (timer.ElapsedSeconds() < config.duration_seconds);
+  BENCHMARKS_CUDA_CHECK(cudaDeviceSynchronize());
+  const double elapsed = timer.ElapsedSeconds();
+
+  BENCHMARKS_CUDA_CHECK(cudaFree(output.release()));
+  benchmarks::PrintExecutionSummary(elapsed, launches);
+  return benchmarks::Status();
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
-  float* output = nullptr;
-  try {
-    const benchmarks::ArgumentParser arguments(argc, argv);
-    if (arguments.HelpRequested()) {
-      PrintHelp(argv[0]);
-      return 0;
-    }
-    arguments.ValidateOptions(
-        {"--device", "--duration", "--warmup", "--block-size", "--iterations"});
-    const auto config = benchmarks::ParseCommonConfig(arguments);
-    const auto iterations_value =
-        arguments.UnsignedValue("--iterations", 10000);
-    if (iterations_value == 0 ||
-        iterations_value > std::numeric_limits<unsigned int>::max()) {
-      throw std::invalid_argument(
-          "--iterations must be in the range [1, 2^32-1]");
-    }
-    const auto iterations = static_cast<unsigned int>(iterations_value);
-
-    std::cout << "BENCHMARK=compute\nVARIANT=fma_fp32\n";
-    benchmarks::PrintCommonConfig(config);
-    std::cout << "ITERATIONS=" << iterations << '\n';
-
-    const auto properties = benchmarks::InitializeCudaDevice(config.device);
-    if (config.block_size > properties.maxThreadsPerBlock) {
-      throw std::invalid_argument("--block-size exceeds the device limit");
-    }
-    const int grid_size = properties.multiProcessorCount * 8;
-    const std::size_t output_elements =
-        static_cast<std::size_t>(grid_size) * config.block_size;
-    BENCHMARKS_CUDA_CHECK(cudaMalloc(&output, output_elements * sizeof(float)));
-
-    for (std::size_t launch = 0; launch < config.warmup_iterations; ++launch) {
-      FmaFp32Kernel<<<grid_size, config.block_size>>>(output, iterations);
-      BENCHMARKS_CUDA_CHECK(cudaGetLastError());
-    }
-    BENCHMARKS_CUDA_CHECK(cudaDeviceSynchronize());
-
-    std::uint64_t launches = 0;
-    const benchmarks::SteadyTimer timer;
-    do {
-      for (std::size_t batch = 0;
-           batch < benchmarks::kLaunchesBetweenSynchronizations; ++batch) {
-        FmaFp32Kernel<<<grid_size, config.block_size>>>(output, iterations);
-        BENCHMARKS_CUDA_CHECK(cudaGetLastError());
-        ++launches;
-      }
-      BENCHMARKS_CUDA_CHECK(cudaDeviceSynchronize());
-    } while (timer.ElapsedSeconds() < config.duration_seconds);
-    BENCHMARKS_CUDA_CHECK(cudaDeviceSynchronize());
-    const double elapsed = timer.ElapsedSeconds();
-
-    BENCHMARKS_CUDA_CHECK(cudaFree(output));
-    output = nullptr;
-    benchmarks::PrintExecutionSummary(elapsed, launches);
-    return 0;
-  } catch (const std::exception& error) {
-    if (output != nullptr) {
-      cudaFree(output);
-    }
-    std::cerr << "STATUS=ERROR\nERROR=" << error.what() << '\n';
-    return 1;
-  }
+  const benchmarks::Status status = Run(argc, argv);
+  return status.ok() ? 0 : benchmarks::ReportError(status);
 }

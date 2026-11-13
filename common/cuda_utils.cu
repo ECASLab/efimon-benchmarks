@@ -12,34 +12,34 @@
 
 namespace benchmarks {
 
-void CheckCuda(cudaError_t result, const char* expression, const char* file,
-               int line) {
+Status CheckCuda(cudaError_t result, const char* expression, const char* file,
+                 int line) {
   if (result == cudaSuccess) {
-    return;
+    return Status();
   }
   std::ostringstream message;
   message << file << ':' << line << ": CUDA call " << expression
           << " failed with " << cudaGetErrorName(result) << " ("
           << static_cast<int>(result) << "): " << cudaGetErrorString(result);
-  throw CudaError(message.str());
+  return Status::Error(message.str());
 }
 
-cudaDeviceProp InitializeCudaDevice(int device) {
+Status InitializeCudaDevice(int device, cudaDeviceProp* properties) {
   int device_count = 0;
   BENCHMARKS_CUDA_CHECK(cudaGetDeviceCount(&device_count));
   if (device >= device_count) {
     std::ostringstream message;
     message << "requested CUDA device " << device << ", but only "
             << device_count << " device(s) are available";
-    throw std::invalid_argument(message.str());
+    return Status::Error(message.str());
   }
   BENCHMARKS_CUDA_CHECK(cudaSetDevice(device));
-  BENCHMARKS_CUDA_CHECK(
-      cudaFree(nullptr));  // Materialize the primary context before timing.
+  // Create the primary context now so that it is not part of the timing.
+  BENCHMARKS_CUDA_CHECK(cudaFree(nullptr));
 
-  cudaDeviceProp properties{};
-  BENCHMARKS_CUDA_CHECK(cudaGetDeviceProperties(&properties, device));
-  return properties;
+  *properties = cudaDeviceProp{};
+  BENCHMARKS_CUDA_CHECK(cudaGetDeviceProperties(properties, device));
+  return Status();
 }
 
 }  // namespace benchmarks
