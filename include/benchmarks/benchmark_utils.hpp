@@ -1,4 +1,13 @@
-#pragma once
+/**
+ * @file benchmark_utils.hpp
+ * @author Kevin Lobo (2020087823@estudiantec.cr)
+ * @brief Command-line parsing and result reporting helpers
+ *
+ * @copyright Copyright (c) 2026. See License for Licensing
+ */
+
+#ifndef INCLUDE_BENCHMARKS_BENCHMARK_UTILS_HPP_
+#define INCLUDE_BENCHMARKS_BENCHMARK_UTILS_HPP_
 
 #include "benchmarks/benchmark_config.hpp"
 
@@ -36,3 +45,5 @@ void print_execution_summary(double elapsed_seconds,
 double elapsed_seconds_since(const std::chrono::steady_clock::time_point& start);
 
 }  // namespace benchmarks
+
+#endif  // INCLUDE_BENCHMARKS_BENCHMARK_UTILS_HPP_

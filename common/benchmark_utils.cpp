@@ -1,3 +1,11 @@
+/**
+ * @file benchmark_utils.cpp
+ * @author Kevin Lobo (2020087823@estudiantec.cr)
+ * @brief Command-line parsing and result reporting helpers
+ *
+ * @copyright Copyright (c) 2026. See License for Licensing
+ */
+
 #include "benchmarks/benchmark_utils.hpp"
 
 #include <algorithm>

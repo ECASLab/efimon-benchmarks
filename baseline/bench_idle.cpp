@@ -1,3 +1,11 @@
+/**
+ * @file bench_idle.cpp
+ * @author Kevin Lobo (2020087823@estudiantec.cr)
+ * @brief Idle benchmark with or without a CUDA context
+ *
+ * @copyright Copyright (c) 2026. See License for Licensing
+ */
+
 #include "benchmarks/benchmark_utils.hpp"
 #include "benchmarks/cuda_utils.hpp"
 #include "benchmarks/timing.hpp"

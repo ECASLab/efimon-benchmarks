@@ -1,4 +1,13 @@
-#pragma once
+/**
+ * @file benchmark_config.hpp
+ * @author Kevin Lobo (2020087823@estudiantec.cr)
+ * @brief Default values and shared benchmark configuration
+ *
+ * @copyright Copyright (c) 2026. See License for Licensing
+ */
+
+#ifndef INCLUDE_BENCHMARKS_BENCHMARK_CONFIG_HPP_
+#define INCLUDE_BENCHMARKS_BENCHMARK_CONFIG_HPP_
 
 #include <cstddef>
 
@@ -19,3 +28,5 @@ struct CommonConfig {
 };
 
 }  // namespace benchmarks
+
+#endif  // INCLUDE_BENCHMARKS_BENCHMARK_CONFIG_HPP_

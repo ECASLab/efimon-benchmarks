@@ -1,4 +1,13 @@
-#pragma once
+/**
+ * @file cuda_utils.hpp
+ * @author Kevin Lobo (2020087823@estudiantec.cr)
+ * @brief CUDA error checking and device setup helpers
+ *
+ * @copyright Copyright (c) 2026. See License for Licensing
+ */
+
+#ifndef INCLUDE_BENCHMARKS_CUDA_UTILS_HPP_
+#define INCLUDE_BENCHMARKS_CUDA_UTILS_HPP_
 
 #include <cuda_runtime.h>
 
@@ -20,3 +29,5 @@ cudaDeviceProp initialize_cuda_device(int device);
 
 #define CUDA_CHECK(expression)                                                \
   ::benchmarks::check_cuda((expression), #expression, __FILE__, __LINE__)
+
+#endif  // INCLUDE_BENCHMARKS_CUDA_UTILS_HPP_

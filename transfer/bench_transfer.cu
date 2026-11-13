@@ -1,3 +1,11 @@
+/**
+ * @file bench_transfer.cu
+ * @author Kevin Lobo (2020087823@estudiantec.cr)
+ * @brief Host-device copy benchmark
+ *
+ * @copyright Copyright (c) 2026. See License for Licensing
+ */
+
 #include "benchmarks/benchmark_config.hpp"
 #include "benchmarks/benchmark_utils.hpp"
 #include "benchmarks/cuda_utils.hpp"

@@ -1,4 +1,13 @@
-#pragma once
+/**
+ * @file timing.hpp
+ * @author Kevin Lobo (2020087823@estudiantec.cr)
+ * @brief Steady-clock timer for the measured phase
+ *
+ * @copyright Copyright (c) 2026. See License for Licensing
+ */
+
+#ifndef INCLUDE_BENCHMARKS_TIMING_HPP_
+#define INCLUDE_BENCHMARKS_TIMING_HPP_
 
 #include <chrono>
 
@@ -18,3 +27,5 @@ class SteadyTimer {
 };
 
 }  // namespace benchmarks
+
+#endif  // INCLUDE_BENCHMARKS_TIMING_HPP_

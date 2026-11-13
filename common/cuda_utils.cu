@@ -1,3 +1,11 @@
+/**
+ * @file cuda_utils.cu
+ * @author Kevin Lobo (2020087823@estudiantec.cr)
+ * @brief CUDA error checking and device setup helpers
+ *
+ * @copyright Copyright (c) 2026. See License for Licensing
+ */
+
 #include "benchmarks/cuda_utils.hpp"
 
 #include <sstream>
