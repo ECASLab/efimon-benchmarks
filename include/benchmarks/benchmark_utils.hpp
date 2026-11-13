@@ -1,6 +1,6 @@
 #pragma once
 
-#include "benchmark_config.hpp"
+#include "benchmarks/benchmark_config.hpp"
 
 #include <chrono>
 #include <cstdint>

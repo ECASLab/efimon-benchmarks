@@ -1,7 +1,7 @@
-#include "benchmark_config.hpp"
-#include "benchmark_utils.hpp"
-#include "cuda_utils.hpp"
-#include "timing.hpp"
+#include "benchmarks/benchmark_config.hpp"
+#include "benchmarks/benchmark_utils.hpp"
+#include "benchmarks/cuda_utils.hpp"
+#include "benchmarks/timing.hpp"
 
 #include <cuda_runtime.h>
 

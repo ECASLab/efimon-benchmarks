@@ -1,6 +1,6 @@
-#include "benchmark_utils.hpp"
-#include "cuda_utils.hpp"
-#include "timing.hpp"
+#include "benchmarks/benchmark_utils.hpp"
+#include "benchmarks/cuda_utils.hpp"
+#include "benchmarks/timing.hpp"
 
 #include <chrono>
 #include <iostream>
