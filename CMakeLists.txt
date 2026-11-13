@@ -36,3 +36,5 @@ target_link_libraries(bench_idle PRIVATE benchmark_common benchmark_cuda_common)
 target_compile_options(bench_idle PRIVATE -Wall -Wextra -Wpedantic)
 
 add_cuda_benchmark(bench_compute compute/bench_compute.cu)
+add_cuda_benchmark(bench_memory memory/bench_memory.cu)
+add_cuda_benchmark(bench_stride memory/bench_stride.cu)
