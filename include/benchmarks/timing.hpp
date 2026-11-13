@@ -16,6 +16,8 @@ namespace benchmarks {
 class SteadyTimer {
  public:
   SteadyTimer() : start_(std::chrono::steady_clock::now()) {}
+  SteadyTimer(const SteadyTimer&) = default;
+  SteadyTimer& operator=(const SteadyTimer&) = default;
 
   double ElapsedSeconds() const {
     return std::chrono::duration<double>(std::chrono::steady_clock::now() -

@@ -22,6 +22,10 @@ namespace benchmarks {
 class ArgumentParser {
  public:
   ArgumentParser(int argc, char** argv);
+  ArgumentParser(const ArgumentParser&) = default;
+  ArgumentParser& operator=(const ArgumentParser&) = default;
+  ArgumentParser(ArgumentParser&&) = default;
+  ArgumentParser& operator=(ArgumentParser&&) = default;
 
   bool HelpRequested() const;
   bool Has(const std::string& option) const;
