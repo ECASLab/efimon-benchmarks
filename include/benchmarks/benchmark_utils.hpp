@@ -9,13 +9,13 @@
 #ifndef INCLUDE_BENCHMARKS_BENCHMARK_UTILS_HPP_
 #define INCLUDE_BENCHMARKS_BENCHMARK_UTILS_HPP_
 
-#include "benchmarks/benchmark_config.hpp"
-
 #include <chrono>
 #include <cstdint>
 #include <initializer_list>
 #include <string>
 #include <unordered_map>
+
+#include "benchmarks/benchmark_config.hpp"
 
 namespace benchmarks {
 
@@ -42,7 +42,8 @@ CommonConfig parse_common_config(const ArgumentParser& arguments);
 void print_common_config(const CommonConfig& config);
 void print_execution_summary(double elapsed_seconds,
                              std::uint64_t operation_count);
-double elapsed_seconds_since(const std::chrono::steady_clock::time_point& start);
+double elapsed_seconds_since(
+    const std::chrono::steady_clock::time_point& start);
 
 }  // namespace benchmarks
 

@@ -27,7 +27,7 @@ cudaDeviceProp initialize_cuda_device(int device);
 
 }  // namespace benchmarks
 
-#define CUDA_CHECK(expression)                                                \
+#define CUDA_CHECK(expression) \
   ::benchmarks::check_cuda((expression), #expression, __FILE__, __LINE__)
 
 #endif  // INCLUDE_BENCHMARKS_CUDA_UTILS_HPP_

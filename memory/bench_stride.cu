@@ -6,11 +6,6 @@
  * @copyright Copyright (c) 2026. See License for Licensing
  */
 
-#include "benchmarks/benchmark_config.hpp"
-#include "benchmarks/benchmark_utils.hpp"
-#include "benchmarks/cuda_utils.hpp"
-#include "benchmarks/timing.hpp"
-
 #include <cuda_runtime.h>
 
 #include <algorithm>
@@ -18,6 +13,11 @@
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+
+#include "benchmarks/benchmark_config.hpp"
+#include "benchmarks/benchmark_utils.hpp"
+#include "benchmarks/cuda_utils.hpp"
+#include "benchmarks/timing.hpp"
 
 namespace {
 
@@ -44,7 +44,8 @@ void print_help(const char* program) {
       << "  --warmup <iterations>  Warm-up kernel launches (default: 5)\n"
       << "  --block-size <threads> Threads per block (default: 256)\n"
       << "  --size <bytes>         Bytes per buffer (default: 268435456)\n"
-      << "  --stride <N>           Source stride in float elements (default: 1)\n"
+      << "  --stride <N>           Source stride in float elements "
+         "(default: 1)\n"
       << "  --help                  Show this help\n";
 }
 
@@ -59,13 +60,14 @@ int main(int argc, char** argv) {
       print_help(argv[0]);
       return 0;
     }
-    arguments.validate_options(
-        {"--device", "--duration", "--warmup", "--block-size", "--size", "--stride"});
+    arguments.validate_options({"--device", "--duration", "--warmup",
+                                "--block-size", "--size", "--stride"});
     const auto config = benchmarks::parse_common_config(arguments);
     const auto size_value =
         arguments.unsigned_value("--size", benchmarks::kDefaultBufferBytes);
     const auto stride_value = arguments.unsigned_value("--stride", 1);
-    if (size_value == 0 || size_value > std::numeric_limits<std::size_t>::max()) {
+    if (size_value == 0 ||
+        size_value > std::numeric_limits<std::size_t>::max()) {
       throw std::invalid_argument("--size is out of range for this platform");
     }
     if (stride_value == 0 ||
@@ -92,7 +94,8 @@ int main(int argc, char** argv) {
         (logical_elements + static_cast<std::size_t>(config.block_size) - 1) /
         static_cast<std::size_t>(config.block_size);
     const auto grid_size = static_cast<int>(std::min<std::size_t>(
-        required_blocks, static_cast<std::size_t>(properties.multiProcessorCount) * 32));
+        required_blocks,
+        static_cast<std::size_t>(properties.multiProcessorCount) * 32));
 
     CUDA_CHECK(cudaMalloc(&source, bytes));
     CUDA_CHECK(cudaMalloc(&destination, bytes));
@@ -100,8 +103,8 @@ int main(int argc, char** argv) {
     CUDA_CHECK(cudaMemset(destination, 0, bytes));
 
     for (std::size_t launch = 0; launch < config.warmup_iterations; ++launch) {
-      strided_read_kernel<<<grid_size, config.block_size>>>(destination, source,
-                                                            logical_elements, stride);
+      strided_read_kernel<<<grid_size, config.block_size>>>(
+          destination, source, logical_elements, stride);
       CUDA_CHECK(cudaGetLastError());
     }
     CUDA_CHECK(cudaDeviceSynchronize());
@@ -111,8 +114,8 @@ int main(int argc, char** argv) {
     do {
       for (std::size_t batch = 0;
            batch < benchmarks::kLaunchesBetweenSynchronizations; ++batch) {
-        strided_read_kernel<<<grid_size, config.block_size>>>(destination, source,
-                                                              logical_elements, stride);
+        strided_read_kernel<<<grid_size, config.block_size>>>(
+            destination, source, logical_elements, stride);
         CUDA_CHECK(cudaGetLastError());
         ++launches;
       }

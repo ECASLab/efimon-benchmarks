@@ -6,17 +6,17 @@
  * @copyright Copyright (c) 2026. See License for Licensing
  */
 
-#include "benchmarks/benchmark_config.hpp"
-#include "benchmarks/benchmark_utils.hpp"
-#include "benchmarks/cuda_utils.hpp"
-#include "benchmarks/timing.hpp"
-
 #include <cuda_runtime.h>
 
 #include <cstdint>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+
+#include "benchmarks/benchmark_config.hpp"
+#include "benchmarks/benchmark_utils.hpp"
+#include "benchmarks/cuda_utils.hpp"
+#include "benchmarks/timing.hpp"
 
 namespace {
 
@@ -47,16 +47,15 @@ __global__ void fma_fp32_kernel(float* output, unsigned int iterations) {
 }
 
 void print_help(const char* program) {
-  std::cout
-      << "Usage: " << program << " [options]\n\n"
-      << "FP32 FMA compute-bound CUDA microbenchmark.\n\n"
-      << "Options:\n"
-      << "  --device <id>          CUDA device (default: 0)\n"
-      << "  --duration <seconds>   Stable phase duration (default: 10)\n"
-      << "  --warmup <iterations>  Warm-up kernel launches (default: 5)\n"
-      << "  --block-size <threads> Threads per block (default: 256)\n"
-      << "  --iterations <N>       FMA loop iterations (default: 10000)\n"
-      << "  --help                  Show this help\n";
+  std::cout << "Usage: " << program << " [options]\n\n"
+            << "FP32 FMA compute-bound CUDA microbenchmark.\n\n"
+            << "Options:\n"
+            << "  --device <id>          CUDA device (default: 0)\n"
+            << "  --duration <seconds>   Stable phase duration (default: 10)\n"
+            << "  --warmup <iterations>  Warm-up kernel launches (default: 5)\n"
+            << "  --block-size <threads> Threads per block (default: 256)\n"
+            << "  --iterations <N>       FMA loop iterations (default: 10000)\n"
+            << "  --help                  Show this help\n";
 }
 
 }  // namespace
@@ -72,10 +71,12 @@ int main(int argc, char** argv) {
     arguments.validate_options(
         {"--device", "--duration", "--warmup", "--block-size", "--iterations"});
     const auto config = benchmarks::parse_common_config(arguments);
-    const auto iterations_value = arguments.unsigned_value("--iterations", 10000);
+    const auto iterations_value =
+        arguments.unsigned_value("--iterations", 10000);
     if (iterations_value == 0 ||
         iterations_value > std::numeric_limits<unsigned int>::max()) {
-      throw std::invalid_argument("--iterations must be in the range [1, 2^32-1]");
+      throw std::invalid_argument(
+          "--iterations must be in the range [1, 2^32-1]");
     }
     const auto iterations = static_cast<unsigned int>(iterations_value);
 

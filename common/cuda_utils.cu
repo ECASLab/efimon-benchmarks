@@ -6,9 +6,9 @@
  * @copyright Copyright (c) 2026. See License for Licensing
  */
 
-#include "benchmarks/cuda_utils.hpp"
-
 #include <sstream>
+
+#include "benchmarks/cuda_utils.hpp"
 
 namespace benchmarks {
 
@@ -34,7 +34,8 @@ cudaDeviceProp initialize_cuda_device(int device) {
     throw std::invalid_argument(message.str());
   }
   CUDA_CHECK(cudaSetDevice(device));
-  CUDA_CHECK(cudaFree(nullptr));  // Materialize the primary context before timing.
+  CUDA_CHECK(
+      cudaFree(nullptr));  // Materialize the primary context before timing.
 
   cudaDeviceProp properties{};
   CUDA_CHECK(cudaGetDeviceProperties(&properties, device));

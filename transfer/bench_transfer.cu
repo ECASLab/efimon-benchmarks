@@ -6,11 +6,6 @@
  * @copyright Copyright (c) 2026. See License for Licensing
  */
 
-#include "benchmarks/benchmark_config.hpp"
-#include "benchmarks/benchmark_utils.hpp"
-#include "benchmarks/cuda_utils.hpp"
-#include "benchmarks/timing.hpp"
-
 #include <cuda_runtime.h>
 
 #include <algorithm>
@@ -20,6 +15,11 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+
+#include "benchmarks/benchmark_config.hpp"
+#include "benchmarks/benchmark_utils.hpp"
+#include "benchmarks/cuda_utils.hpp"
+#include "benchmarks/timing.hpp"
 
 namespace {
 
@@ -31,7 +31,8 @@ void print_help(const char* program) {
       << "  --device <id>          CUDA device (default: 0)\n"
       << "  --duration <seconds>   Stable phase duration (default: 10)\n"
       << "  --warmup <iterations>  Warm-up transfers (default: 5)\n"
-      << "  --block-size <threads> Accepted for CLI consistency (default: 256)\n"
+      << "  --block-size <threads> Accepted for CLI consistency "
+         "(default: 256)\n"
       << "  --size <bytes>         Bytes per transfer (default: 268435456)\n"
       << "  --direction <h2d|d2h>  Transfer direction (default: h2d)\n"
       << "  --memory <type>        pinned or pageable (default: pinned)\n"
@@ -62,12 +63,12 @@ int main(int argc, char** argv) {
     const auto config = benchmarks::parse_common_config(arguments);
     const auto size_value =
         arguments.unsigned_value("--size", benchmarks::kDefaultBufferBytes);
-    if (size_value == 0 || size_value > std::numeric_limits<std::size_t>::max()) {
+    if (size_value == 0 ||
+        size_value > std::numeric_limits<std::size_t>::max()) {
       throw std::invalid_argument("--size is out of range for this platform");
     }
     const auto bytes = static_cast<std::size_t>(size_value);
-    const std::string direction =
-        arguments.string_value("--direction", "h2d");
+    const std::string direction = arguments.string_value("--direction", "h2d");
     const cudaMemcpyKind kind = copy_kind(direction);
     const std::string memory = arguments.string_value("--memory", "pinned");
     if (memory != "pinned" && memory != "pageable") {

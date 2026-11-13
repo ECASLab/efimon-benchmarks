@@ -16,6 +16,7 @@
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <unordered_set>
 
@@ -28,7 +29,7 @@ std::uint64_t parse_unsigned(const std::string& option,
   const auto* begin = text.data();
   const auto* end = begin + text.size();
   const auto result = std::from_chars(begin, end, value);
-  if (text.empty() || result.ec != std::errc{} || result.ptr != end) {
+  if (text.empty() || result.ec != std::errc() || result.ptr != end) {
     throw std::invalid_argument("invalid unsigned integer for " + option +
                                 ": " + text);
   }
@@ -45,7 +46,8 @@ ArgumentParser::ArgumentParser(int argc, char** argv) {
       continue;
     }
     if (argument.rfind("--", 0) != 0 || argument.size() == 2) {
-      throw std::invalid_argument("unexpected positional argument: " + argument);
+      throw std::invalid_argument("unexpected positional argument: " +
+                                  argument);
     }
 
     std::string option;
@@ -59,7 +61,8 @@ ArgumentParser::ArgumentParser(int argc, char** argv) {
       }
     } else {
       option = argument;
-      if (index + 1 >= argc || std::string_view(argv[index + 1]).rfind("--", 0) == 0) {
+      if (index + 1 >= argc ||
+          std::string_view(argv[index + 1]).rfind("--", 0) == 0) {
         throw std::invalid_argument("missing value for " + option);
       }
       value = argv[++index];
@@ -87,7 +90,7 @@ std::uint64_t ArgumentParser::unsigned_value(
     const std::string& option, std::uint64_t default_value) const {
   const auto found = options_.find(option);
   return found == options_.end() ? default_value
-                                : parse_unsigned(option, found->second);
+                                 : parse_unsigned(option, found->second);
 }
 
 int ArgumentParser::integer_value(const std::string& option,
@@ -100,7 +103,7 @@ int ArgumentParser::integer_value(const std::string& option,
   const auto* begin = found->second.data();
   const auto* end = begin + found->second.size();
   const auto result = std::from_chars(begin, end, value);
-  if (found->second.empty() || result.ec != std::errc{} || result.ptr != end) {
+  if (found->second.empty() || result.ec != std::errc() || result.ptr != end) {
     throw std::invalid_argument("invalid integer for " + option + ": " +
                                 found->second);
   }
