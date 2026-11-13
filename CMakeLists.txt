@@ -30,3 +30,7 @@ function(add_cuda_benchmark target source)
   target_link_libraries(${target} PRIVATE benchmark_common benchmark_cuda_common)
   set_target_properties(${target} PROPERTIES CUDA_SEPARABLE_COMPILATION OFF)
 endfunction()
+
+add_executable(bench_idle baseline/bench_idle.cpp)
+target_link_libraries(bench_idle PRIVATE benchmark_common benchmark_cuda_common)
+target_compile_options(bench_idle PRIVATE -Wall -Wextra -Wpedantic)
